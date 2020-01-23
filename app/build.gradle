@@ -8,7 +8,7 @@ android {
     compileSdkVersion 29
     defaultConfig {
         applicationId "com.be4k.browniannoise"
-        minSdkVersion 29
+        minSdkVersion 27
         targetSdkVersion 29
         versionCode 1
         versionName "1.0"

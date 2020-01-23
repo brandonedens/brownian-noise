@@ -1,43 +1,18 @@
 package com.be4k.browniannoise
 
 import android.content.Context
+import android.content.Intent
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.os.Handler
 import android.view.View
 import kotlinx.android.synthetic.main.activity_fullscreen.*
-import android.media.AudioFormat.CHANNEL_OUT_STEREO
-import android.media.AudioFormat.ENCODING_PCM_16BIT
-import android.media.AudioAttributes
-import android.media.AudioFormat
-import android.media.AudioTrack
-import android.media.AudioTrack.WRITE_BLOCKING
-import android.os.Build
-import androidx.annotation.RequiresApi
-import kotlin.random.Random
-
 
 /**
  * An example full-screen activity that shows and hides the system UI (i.e.
  * status bar and navigation/system bar) with user interaction.
  */
 class FullscreenActivity : AppCompatActivity() {
-    private val mTrack = AudioTrack.Builder()
-        .setAudioAttributes(
-            AudioAttributes.Builder()
-                .setUsage(AudioAttributes.USAGE_MEDIA)
-                .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
-                .build()
-        )
-        .setAudioFormat(
-            AudioFormat.Builder()
-                .setEncoding(AudioFormat.ENCODING_PCM_FLOAT)
-                .setSampleRate(POSITION_UPDATE_NUM_FRAMES)
-                .setChannelMask(AudioFormat.CHANNEL_OUT_STEREO)
-                .build()
-        )
-        .setBufferSizeInBytes(AUDIO_BUF_SIZE)
-        .build()
 
     private val mHideHandler = Handler()
     private val mHidePart2Runnable = Runnable {
@@ -88,6 +63,9 @@ class FullscreenActivity : AppCompatActivity() {
         // operations to prevent the jarring behavior of controls going away
         // while interacting with the UI.
         dummy_button.setOnTouchListener(mDelayHideTouchListener)
+
+        val intent = Intent(this, BrownianPlayback::class.java)
+        startService(intent)
     }
 
     override fun onPostCreate(savedInstanceState: Bundle?) {
@@ -97,42 +75,6 @@ class FullscreenActivity : AppCompatActivity() {
         // created, to briefly hint to the user that UI controls
         // are available.
         delayedHide(100)
-    }
-
-    override fun onStart() {
-        super.onStart()
-
-        val samples = FloatArray(AUDIO_BUF_SIZE) { Random.nextFloat() * 2 - 1 }
-        var lastOut: Float = 0.0f
-        for (i in 0 until AUDIO_BUF_SIZE) {
-            samples[i] = (lastOut + (0.02f * samples[i])) / 1.02f
-            lastOut = samples[i]
-            samples[i] *= 3.5f
-        }
-        mTrack.write(samples, 0, AUDIO_BUF_SIZE, WRITE_BLOCKING)
-        //mTrack.setPositionNotificationPeriod(AUDIO_BUF_SIZE / 2)
-        mTrack.setPositionNotificationPeriod(POSITION_UPDATE_NUM_FRAMES)
-        mTrack.setPlaybackPositionUpdateListener(ContinuePlaying)
-        mTrack.play()
-    }
-
-    object ContinuePlaying : AudioTrack.OnPlaybackPositionUpdateListener {
-        override fun onMarkerReached(track: AudioTrack) {
-            // Do nothing.
-        }
-
-        override fun onPeriodicNotification(track: AudioTrack) {
-            val minBuffSize = AUDIO_BUF_SIZE / 2;
-            val samples = FloatArray(minBuffSize) { Random.nextFloat() * 2 - 1 }
-            var lastOut: Float = 0.0f
-            for (i in 0 until minBuffSize) {
-                samples[i] = (lastOut + (0.02f * samples[i])) / 1.02f
-                lastOut = samples[i]
-                samples[i] *= 3.5f
-            }
-            track.write(samples, 0, minBuffSize, WRITE_BLOCKING)
-            track.flush()
-        }
     }
 
     private fun toggle() {
@@ -176,16 +118,6 @@ class FullscreenActivity : AppCompatActivity() {
     }
 
     companion object {
-        /**
-         * Size of the audio buffer in samples.
-         */
-        private val AUDIO_BUF_SIZE = 352800;
-
-        /**
-         * Number of frames before receiving request for more frames.
-         */
-        private val POSITION_UPDATE_NUM_FRAMES = 22050;
-
         /**
          * Whether or not the system UI should be auto-hidden after
          * [AUTO_HIDE_DELAY_MILLIS] milliseconds.
